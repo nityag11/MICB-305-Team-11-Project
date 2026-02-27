@@ -24,5 +24,13 @@ taxonomy_formatted = taxonomy %>%
 
 counts_formatted = counts %>% as.matrix()
 
-# Metadata 
+# Create the phyloseq object 
 
+ps = phyloseq(sample_data(metadata), 
+              otu_table(counts_formatted, taxa_are_rows = T),
+              tax_table(taxonomy_formatted),
+              tree)
+
+#Save as RDS file
+
+saveRDS(ps, "phyloseq_taxonomy.rds")
