@@ -33,3 +33,10 @@ qiime feature-table summarize \
 qiime feature-table tabulate-seqs \
   --i-data rep-seqs.qza \
   --o-visualization rep-seqs.qzv
+
+  qiime feature-classifier extract-reads \
+  --i-sequences /datasets/silva_ref_files/silva-138-99-seqs.qza \
+  --p-f-primer GTGYCAGCMGCCGCGGTAA \
+  --p-r-primer GGACTACNVGGGTWTCTAAT \
+  --p-trunc-len 151 \
+  --o-reads ref-seqs-trimmed.qza
