@@ -50,3 +50,8 @@ qiime feature-classifier classify-sklearn \
   --i-classifier classifier.qza \
   --i-reads rep-seqs.qza \
   --o-classification taxonomy.qza
+
+qiime feature-table filter-features \
+  --i-table table-no-mitochondria-no-chloroplast.qza \
+  --p-min-frequency 5 \
+  --o-filtered-table feature-frequency-filtered-table.qza
