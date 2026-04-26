@@ -1,0 +1,17 @@
+mkdir picrust
+
+qiime tools export \
+   --input-path feature-frequency-filtered-table.qza \
+   --output-path picrust
+
+qiime tools export \
+   --input-path rep-seqs.qza \
+   --output-path picrust
+
+conda deactivate
+conda activate picrust2
+
+picrust2_pipeline.py \
+   -s picrust/dna-sequences.fasta \
+   -i picrust/feature-table.biom \
+   -o picrust_out
