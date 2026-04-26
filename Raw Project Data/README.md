@@ -40,3 +40,8 @@ qiime feature-table tabulate-seqs \
   --p-r-primer GGACTACNVGGGTWTCTAAT \
   --p-trunc-len 151 \
   --o-reads ref-seqs-trimmed.qza
+
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads ref-seqs-trimmed.qza \
+  --i-reference-taxonomy /datasets/silva_ref_files/silva-138-99-tax.qza \
+  --o-classifier classifier.qza
