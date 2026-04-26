@@ -45,3 +45,8 @@ qiime feature-classifier fit-classifier-naive-bayes \
   --i-reference-reads ref-seqs-trimmed.qza \
   --i-reference-taxonomy /datasets/silva_ref_files/silva-138-99-tax.qza \
   --o-classifier classifier.qza
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier classifier.qza \
+  --i-reads rep-seqs.qza \
+  --o-classification taxonomy.qza
