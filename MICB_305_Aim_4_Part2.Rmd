@@ -1,0 +1,253 @@
+---
+title: "MICB 305 Aim 4 Part 2"
+output: html_document
+date: "2026-03-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Packages & Phyloseq object
+
+```{r packages and data}
+# Loading packages
+library(tidyverse)
+library(phyloseq)
+library(vegan)
+
+# Loading phyloseq object 
+ps = readRDS("phyloseq_taxonomy.rds")
+```
+
+## Data Filtering & Grouping
+
+```{r filtering}
+
+# Removing Untreated MS participants and NAs from probiotics column
+ps_filtered_control <- subset_samples(ps,
+  treatments_grouped != "Untreated" &
+  !is.na(probiotics))
+  
+# Grouping treatment types and probiotics into Oral_No, Oral_Yes, Non-Oral_No, Non-Oral_Yes, Non-oral_No, and Control
+meta_data <- as.data.frame(sample_data(ps_filtered_control))
+
+meta_data$group <- ifelse(
+  meta_data$treatments_grouped == "Control",
+  "Control",
+  paste(meta_data$treatments_grouped, meta_data$probiotics, sep = "_")
+)
+
+# Updating phyloseq object 
+sample_data(ps_filtered_control) <- sample_data(meta_data)
+
+# Rarefy data to sequencing depth of 6000
+ps_rare_control = ps_filtered_control %>% rarefy_even_depth(sample.size = 6000, rngseed = 100)
+```
+
+## Beta Diversity Code
+
+```{r beta Diversity}
+
+# Calculating Distance Matrix 
+
+# Bray Curtis
+ps_bray_control = phyloseq::distance(ps_rare_control, method = "bray")
+# Unweighted UniFrac
+ps_uunifrac_control = phyloseq::distance(ps_rare_control, method = "uunifrac")
+# Weighted UniFrac
+ps_wunifrac_control = phyloseq::distance(ps_rare_control, method = "wunifrac")
+# Jaccard
+ps_jaccard_control = phyloseq::distance(ps_rare_control, method = "jaccard", binary = TRUE)
+
+# MDS Scaling 
+
+# Bray Curtis
+set.seed(100)
+mds_bray_control = metaMDS(ps_bray_control)
+# Unweighted UniFrac
+set.seed(100)
+mds_uunifrac_control = metaMDS(ps_uunifrac_control)
+# Weighted UniFrac
+set.seed(100)
+mds_wunifrac_control = metaMDS(ps_wunifrac_control)
+# Jaccard
+set.seed(100)
+mds_jaccard_control = metaMDS(ps_jaccard_control)
+
+# Extracting Data
+
+mds_bray_data_control = mds_bray_control$points %>% as.data.frame %>%
+  merge(sample_data(ps_rare_control), by = 'row.names', sort = F)
+
+mds_uunifrac_data_control = mds_uunifrac_control$points %>% as.data.frame %>%
+  merge(sample_data(ps_rare_control), by = 'row.names', sort = F)
+
+mds_wunifrac_data_control = mds_wunifrac_control$points %>% as.data.frame %>%
+  merge(sample_data(ps_rare_control), by = 'row.names', sort = F)
+
+mds_jaccard_data_control = mds_jaccard_control$points %>% as.data.frame %>%
+  merge(sample_data(ps_rare_control), by = 'row.names', sort = F)
+```
+
+## Beta Diversity Plot
+
+```{r plot}
+# Plotting all 4 metrics
+
+# Picking colours for each group
+
+group_colors <- c(
+  "Oral_No"      = "#48CAe4",  # light blue
+  "Oral_Yes"     = "#48CAe4",  # dark blue
+  "Non-Oral_No"  = "#FA8072",  # pink
+  "Non-Oral_Yes" = "#FA8072",  # red
+  "Control"    = "#696969"   # grey
+)
+
+# Plotting metrics again, splitting plots into probiotics or non-probiotics compared to Untreated
+
+# Bray Curtis No Probiotics Plot
+bray_plot_no_control = mds_bray_data_control %>%
+  filter(group %in% c("Oral_No", "Non-Oral_No", "Control")) %>%
+  ggplot(aes(MDS1, MDS2, color = group)) +
+  geom_point(size = 0.8) +
+  stat_ellipse() +
+  scale_color_manual(values = group_colors, name = "No Probiotics", labels = c(
+    "Oral_No" = "Oral",
+    "Non-Oral_No" = "Non-Oral",
+    "Control" = "Healthy"),
+  breaks = c("Non-Oral_No", "Oral_No", "Control")) +
+  theme_classic(base_size = 18)
+bray_plot_no_control
+
+# Bray Curtis Probiotics Plot
+bray_plot_yes_control = mds_bray_data_control %>%
+  filter(group %in% c("Oral_Yes", "Non-Oral_Yes", "Control")) %>%
+  ggplot(aes(MDS1, MDS2, color = group)) +
+  geom_point(size = 0.8) +
+  stat_ellipse() +
+   scale_color_manual(values = group_colors, name = "Probiotics", labels = c(
+    "Oral_Yes" = "Oral",
+    "Non-Oral_Yes" = "Non-Oral",
+    "Control" = "Healthy"),
+  breaks = c("Non-Oral_Yes", "Oral_Yes", "Control")) +
+  theme_classic(base_size = 18)
+bray_plot_yes_control
+
+# Unweighted UniFrac No Probiotics Plot
+uunifrac_plot_no_control = mds_uunifrac_data_control %>%
+  filter(group %in% c("Oral_No", "Non-Oral_No", "Control")) %>%
+  ggplot(aes(MDS1, MDS2, color = group)) +
+  geom_point(size = 0.8) +
+  stat_ellipse() +
+   scale_color_manual(values = group_colors, name = "No Probiotics", labels = c(
+    "Oral_No" = "Oral",
+    "Non-Oral_No" = "Non-Oral",
+    "Control" = "Healthy"),
+  breaks = c("Non-Oral_No", "Oral_No", "Control")) +
+  theme_classic(base_size = 18)
+uunifrac_plot_no_control
+
+# Unweighted UniFrac Probiotics Plot
+uunifrac_plot_yes_control = mds_uunifrac_data_control %>%
+  filter(group %in% c("Oral_Yes", "Non-Oral_Yes", "Control")) %>%
+  ggplot(aes(MDS1, MDS2, color = group)) +
+  geom_point(size = 0.8) +
+  stat_ellipse() +
+   scale_color_manual(values = group_colors, name = "Probiotics", labels = c(
+    "Oral_Yes" = "Oral",
+    "Non-Oral_Yes" = "Non-Oral",
+    "Control" = "Healthy"),
+  breaks = c("Non-Oral_Yes", "Oral_Yes", "Control")) +
+  theme_classic(base_size = 18)
+uunifrac_plot_yes_control
+
+# Weighted UniFrac No Probiotics Plot
+wunifrac_plot_no_control = mds_wunifrac_data_control %>%
+  filter(group %in% c("Oral_No", "Non-Oral_No", "Control")) %>%
+  ggplot(aes(MDS1, MDS2, color = group)) +
+  geom_point(size = 0.8) +
+  stat_ellipse() +
+   scale_color_manual(values = group_colors, name = "No Probiotics", labels = c(
+    "Oral_No" = "Oral",
+    "Non-Oral_No" = "Non-Oral",
+    "Control" = "Healthy"),
+  breaks = c("Non-Oral_No", "Oral_No", "Control")) +
+  theme_classic(base_size = 18)
+wunifrac_plot_no_control
+
+# Weighted UniFrac Probiotics Plot
+wunifrac_plot_yes_control = mds_wunifrac_data_control %>%
+  filter(group %in% c("Oral_Yes", "Non-Oral_Yes", "Control")) %>%
+  ggplot(aes(MDS1, MDS2, color = group)) +
+  geom_point(size = 0.8) +
+  stat_ellipse() +
+  scale_color_manual(values = group_colors, name = "Probiotics", labels = c(
+    "Oral_Yes" = "Oral",
+    "Non-Oral_Yes" = "Non-Oral",
+    "Control" = "Healthy"),
+  breaks = c("Non-Oral_Yes", "Oral_Yes", "Control")) +
+  theme_classic(base_size = 18)
+wunifrac_plot_yes_control
+
+# Jaccard No Probiotics Plot
+jaccard_plot_no_control = mds_jaccard_data_control %>%
+  filter(group %in% c("Oral_No", "Non-Oral_No", "Control")) %>%
+  ggplot(aes(MDS1, MDS2, color = group)) +
+  geom_point(size = 0.8) +
+  stat_ellipse() +
+  scale_color_manual(values = group_colors, name = "No Probiotics", labels = c(
+    "Oral_No" = "Oral",
+    "Non-Oral_No" = "Non-Oral",
+    "Control" = "Healthy"),
+  breaks = c("Non-Oral_No", "Oral_No", "Control")) +
+  theme_classic(base_size = 18)
+jaccard_plot_no_control
+
+# Jaccard Probiotics Plot
+jaccard_plot_yes_control = mds_jaccard_data_control %>%
+  filter(group %in% c("Oral_Yes", "Non-Oral_Yes", "Control")) %>%
+  ggplot(aes(MDS1, MDS2, color = group)) +
+  geom_point(size = 0.8) +
+  stat_ellipse() +
+  scale_color_manual(values = group_colors, name = "Probiotics", labels = c(
+    "Oral_Yes" = "Oral",
+    "Non-Oral_Yes" = "Non-Oral",
+    "Control" = "Healthy"),
+  breaks = c("Non-Oral_Yes", "Oral_Yes", "Control")) +
+  theme_classic(base_size = 18)
+jaccard_plot_yes_control
+```
+
+# Statistical Testing
+
+```{r stats}
+
+#Extract metadata
+metadata = sample_data(ps_rare_control) %>% data.frame()
+
+# PERMANOVA with interaction term Bray Curtis
+set.seed(100)
+stats_univar_2_bray_control = adonis2(ps_bray_control ~ treatments_grouped * probiotics,
+        data = metadata,
+        by = "margin")
+
+# PERMANOVA with interaction term Unweighted UniFrac
+set.seed(100)
+stats_univar_2_uunifrac_control = adonis2(ps_uunifrac_control ~ treatments_grouped * probiotics,
+        data = metadata,
+        by = "margin")
+
+# PERMANOVA with interaction term Weighted UniFrac
+set.seed(100)
+stats_univar_2_wunifrac_control = adonis2(ps_wunifrac_control ~ treatments_grouped * probiotics,
+        data = metadata,
+        by = "margin")
+
+# PERMANOVA with interaction term Jaccard
+set.seed(100)
+stats_univar_2_jaccard_control = adonis2(ps_jaccard_control ~ treatments_grouped * probiotics,
+        data = metadata,
+        by = "margin")
+```
