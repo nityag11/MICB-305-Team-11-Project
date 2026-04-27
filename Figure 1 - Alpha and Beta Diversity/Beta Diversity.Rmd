@@ -1,0 +1,308 @@
+---
+title: "beta diversity"
+output: html_document
+date: "2026-03-27"
+---
+
+## Loading Packages & Phyloseq object
+
+```{r}
+library(tidyverse)
+library(phyloseq)
+library(vegan)
+library(writexl)
+```
+
+```{r}
+ps <- readRDS('phyloseq_taxonomy.rds')
+```
+
+## Rarefy data and group samples
+
+```{r}
+psrare <- ps %>% rarefy_even_depth(sample.size = 6000, rngseed = 421, verbose = FALSE)
+```
+
+```{r}
+
+# Group the samples into oral and non-oral, and then divide into four groups based on probiotic use
+
+sd <- data.frame(sample_data(psrare))
+
+sd <- sd %>%
+  mutate(administration = case_when(
+    administration %in% c("Infused", "Subcutaneous") ~ "Non-Oral",
+    TRUE ~ as.character(administration)
+  ))
+
+sd <- sd %>%
+  filter(administration %in% c("Oral", "Non-Oral"))
+
+sd <- filter(sd, !is.na(sd$probiotics))
+
+sd$administration <- as.factor(sd$administration)
+sd$probiotics <- as.factor(sd$probiotics)
+
+class(sd$administration)
+
+#create combined group labeling for samples 
+sd <- sd %>%
+  mutate(Groups = paste(administration, probiotics, sep = "_"))
+
+sd$Groups <- factor(sd$Groups,
+                   levels = c("Non-Oral_No", "Non-Oral_Yes", "Oral_No", "Oral_Yes"))
+
+# Update phyloseq object
+sample_data(psrare) <- sample_data(sd)
+
+metadata = sample_data(psrare) %>% data.frame()
+```
+
+## Beta diversitry distance matrix
+
+```{r}
+# Bray-Curtis
+dist_bray <- phyloseq::distance(psrare, method = "bray")
+# Jaccard
+dist_jaccard <- phyloseq::distance(psrare, method = "jaccard")
+# Unweighted UniFrac
+dist_unweighted <- phyloseq::distance(psrare, method = "unifrac", weighted = FALSE)
+# Weighted UniFrac
+dist_weighted <- phyloseq::distance(psrare, method = "unifrac", weighted = TRUE)
+```
+
+
+## Bray-Curtis MDS plot
+```{r}
+# Bray-Curtis
+mds = metaMDS(dist_bray)
+
+mds_data_1 = mds$points %>% as.data.frame %>%
+  merge(sample_data(psrare), by='row.names', sort=F)
+head(mds_data_1)
+
+dist_bray = mds_data_1 %>%
+  ggplot(aes(MDS1, MDS2, color = Groups)) +
+  geom_point() +
+  stat_ellipse(linewidth = 1) +
+  scale_color_manual(values = c(
+    "Non-Oral_No"  = "#4C78A8",  # original blue
+    "Non-Oral_Yes" = "#6BAED6",  # stronger medium blue 
+    "Oral_No"      = "#D55E00",  # stronger orange 
+    "Oral_Yes"     = "#E69F00"   # orange-yellow
+  )) +
+  theme_classic(base_size = 14)
+
+dist_bray
+
+
+ggsave(
+  "Bray-Curtis_Beta_Diversity.jpeg",
+  plot = dist_bray,
+  height = 5, width = 8
+)
+
+```
+
+## Jaccard MDS plot
+```{r}
+
+# Jaccard
+
+mds_2 = metaMDS(dist_jaccard)
+
+mds_data_2 = mds_2$points %>% as.data.frame %>%
+  merge(sample_data(psrare), by='row.names', sort=F)
+head(mds_data_2)
+
+dist_jaccard = mds_data_2 %>%
+  ggplot(aes(MDS1,MDS2,color = Groups)) +
+  geom_point() +
+  stat_ellipse() +
+   scale_color_manual(values = c(
+    "Non-Oral_No"  = "#4C78A8",  # original blue
+    "Non-Oral_Yes" = "#6BAED6",  # stronger medium blue
+    "Oral_No"      = "#D55E00",  # stronger orange
+    "Oral_Yes"     = "#E69F00"   # orange-yellow
+  )) +
+  theme_classic(base_size=14)
+dist_jaccard
+
+
+ggsave(
+  "Jaccard_Beta_Diversity.jpeg",
+  plot = dist_jaccard,
+  height = 5, width = 8
+)
+```
+
+## Unweighted UniFrac MDS plot
+```{r}
+# Unweighted UniFrac
+
+mds_3 = metaMDS(dist_unweighted)
+
+mds_data_3 = mds_3$points %>% as.data.frame %>%
+  merge(sample_data(psrare), by='row.names', sort=F)
+head(mds_data_3)
+
+dist_unweighted = mds_data_3 %>%
+  ggplot(aes(MDS1,MDS2,color = Groups)) +
+  geom_point() +
+  stat_ellipse() +
+   scale_color_manual(values = c(
+    "Non-Oral_No"  = "#4C78A8",  # original blue
+    "Non-Oral_Yes" = "#6BAED6",  # stronger medium blue
+    "Oral_No"      = "#D55E00",  # stronger orange
+    "Oral_Yes"     = "#E69F00"   # orange-yellow
+  )) +
+  theme_classic(base_size=14)
+dist_unweighted
+
+
+ggsave(
+  "Unweighted UniFrac_Beta_Diversity.jpeg",
+  plot = dist_unweighted,
+  height = 5, width = 8
+)
+```
+
+## Weighted UniFrac matrix and MDS plot
+```{r}
+# Weighted UniFrac
+
+mds_4 = metaMDS(dist_weighted)
+
+mds_data_4 = mds_4$points %>% as.data.frame %>%
+  merge(sample_data(psrare), by='row.names', sort=F)
+head(mds_data_4)
+
+dist_weighted = mds_data_4 %>%
+  ggplot(aes(MDS1,MDS2,color = Groups)) +
+  geom_point() +
+  stat_ellipse() +
+   scale_color_manual(values = c(
+    "Non-Oral_No"  = "#4C78A8",  # original blue
+    "Non-Oral_Yes" = "#6BAED6",  # stronger medium blue
+    "Oral_No"      = "#D55E00",  # stronger orange
+    "Oral_Yes"     = "#E69F00"   # orange-yellow
+  )) +
+  theme_classic(base_size=14)
+dist_weighted
+
+
+ggsave('Weighted UniFrac_Beta_Diversity.jpeg',
+       plot = dist_bray,
+       height= 5, width = 8)
+
+
+
+```
+
+## Bray-Curtis PERMANOVA statistical test with interaction term
+```{r}
+
+# PERMANOVA with interaction term
+stats_bray <- adonis2(
+  dist_bray ~ administration * probiotics,
+  data = metadata,
+  by = "margin"
+)
+
+stats_bray
+
+
+stats = bind_rows('Multivariate' = stats_bray %>% as.data.frame() %>% 
+                    rownames_to_column('Variable'),
+                  .id = 'Model') 
+
+
+stats_b = stats %>% rename(Pval = `Pr(>F)`) %>%
+  filter(!is.na(Pval))
+
+stats_b
+
+
+```
+
+## Jaccard PERMANOVA statistical test with interaction term
+```{r}
+
+# PERMANOVA with interaction term - jaccard
+
+stats_jac <- adonis2(
+  dist_jaccard ~ administration * probiotics,
+  data = metadata,
+  by = "margin"
+)
+
+stats_jac
+
+
+stats = bind_rows('Multivariate' = stats_jac %>% as.data.frame() %>% 
+                    rownames_to_column('Variable'),
+                  .id = 'Model') 
+
+
+
+stats_j = stats %>% rename(Pval = `Pr(>F)`) %>%
+  filter(!is.na(Pval))
+
+stats_j 
+
+
+
+```
+
+## Unweighted UniFrac PERMANOVA statistical test with interaction term
+```{r}
+# PERMANOVA with interaction term - unweighted
+
+stats_unweighted <- adonis2(
+  dist_unweighted ~ administration * probiotics,
+  data = metadata,
+  by = "margin"
+)
+
+stats_unweighted
+
+
+stats = bind_rows('Multivariate' = stats_unweighted %>% as.data.frame() %>% 
+                    rownames_to_column('Variable'),
+                  .id = 'Model') 
+
+
+
+stats_un = stats %>% rename(Pval = `Pr(>F)`) %>%
+  filter(!is.na(Pval)) 
+
+stats_un 
+
+
+```
+
+## Weighted UniFrac PERMANOVA statistical test with interaction term
+```{r}
+# PERMANOVA with interaction term - weighted
+
+stats_weighted <- adonis2(
+  dist_weighted ~ administration * probiotics,
+  data = metadata,
+  by = "margin"
+)
+
+stats_weighted
+
+
+stats = bind_rows('Multivariate' = stats_weighted %>% as.data.frame() %>% 
+                    rownames_to_column('Variable'),
+                  .id = 'Model') 
+
+
+
+stats_weight = stats %>% rename(Pval = `Pr(>F)`) %>%
+  filter(!is.na(Pval))
+
+stats_weight 
+
+```
