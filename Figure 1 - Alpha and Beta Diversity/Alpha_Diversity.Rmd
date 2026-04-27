@@ -1,0 +1,390 @@
+---
+title: "Cheng_Jimmy_Alpha_Diversity"
+output: html_document
+date: "2026-03-18"
+---
+## Loading Packages & Phyloseq object
+```{r}
+library(tidyverse)
+library(phyloseq)
+library(vegan)
+library(ggpubr)
+library(microbiome)
+library(indicspecies)
+library(writexl)
+library(ggplot2)
+```
+
+```{r}
+ps = readRDS('phyloseq_taxonomy.rds')
+
+```
+
+
+## Filter data and group samples
+```{r}
+psrare = ps %>% rarefy_even_depth(sample.size = 6000, rngseed = 421)
+
+
+```
+
+
+```{r}
+sd <- data.frame(sample_data(psrare)) 
+
+
+#group samples into oral and non-oral
+sd <- sd %>%            
+  mutate(administration = case_when(
+    administration %in% c("Infused", "Subcutaneous") ~ "Non-Oral",
+    TRUE ~ as.character(administration)
+  ))
+sd <- sd %>%
+  filter(administration %in% c("Oral", "Non-Oral"))  
+
+sd <- filter(sd, !is.na(sd$probiotics))
+
+sd$administration <- as.factor(sd$administration)
+
+sd$probiotics <- as.factor(sd$probiotics)
+
+class(sd$administration)
+
+
+
+sample_data(psrare) <- sample_data(sd)
+
+
+```
+
+
+## Shannon Alpha Diversity Across Probiotic Status and Administration Routes
+```{r}
+set.seed(421)
+
+p = plot_richness(psrare,
+                  x = "administration",
+                  measures = c("Shannon"),
+                  color = "administration")
+p
+
+pdata = p$data
+
+str(pdata)
+
+p_formatted <- pdata %>%
+  ggplot(aes(x = administration, y = value, fill = probiotics)) +
+  geom_boxplot(
+    aes(group = interaction(administration, probiotics)),
+    outlier.shape = NA,
+    width = 0.6,
+    position = position_dodge(width = 0.7)
+  ) +
+  geom_jitter(
+    aes(group = probiotics),
+    position = position_jitterdodge(
+      jitter.width = 0.08,
+      dodge.width = 0.7
+    ),
+    alpha = 0.4,
+    size = 2,
+    shape = 16,
+    color = "black"
+  ) +
+  scale_fill_manual(values = c(
+    "No" = "#F8766D",
+    "Yes" = "#00BFC4"
+  )) +
+  theme_classic(base_size = 18) +
+  ylab("Alpha Diversity") +
+  xlab("Administration route") +
+  labs(fill = "Probiotics")
+
+p_formatted
+
+ggsave(
+  "Shannon_Alpha_Diversity.jpeg",
+  plot = p_formatted,
+  height = 5, width = 8
+)
+```
+
+
+
+## Simpson Alpha Diversity Across Probiotic Status and Administration Routes
+```{r}
+
+set.seed(421)
+
+p = plot_richness(psrare,
+                  x = "administration",
+                  measures = c("Simpson"),
+                  color = "administration")
+p
+
+pdata = p$data
+
+str(pdata)
+
+p_formatted <- pdata %>%
+  ggplot(aes(x = administration, y = value, fill = probiotics)) +
+  geom_boxplot(
+    aes(group = interaction(administration, probiotics)),
+    outlier.shape = NA,
+    width = 0.6,
+    position = position_dodge(width = 0.7)
+  ) +
+  geom_jitter(
+    aes(group = probiotics),
+    position = position_jitterdodge(
+      jitter.width = 0.08,
+      dodge.width = 0.7
+    ),
+    alpha = 0.4,
+    size = 2,
+    shape = 16,
+    color = "black"
+  ) +
+  scale_fill_manual(values = c(
+    "No" = "#F8766D",
+    "Yes" = "#00BFC4"
+  )) +
+  theme_classic(base_size = 18) +
+  ylab("Alpha Diversity") +
+  xlab("Administration route") +
+  labs(fill = "Probiotics")
+
+p_formatted
+
+ggsave(
+  "Simpson_Alpha_Diversity.jpeg",
+  plot = p_formatted,
+  height = 5, width = 8
+)
+
+```
+
+
+## Observed Features Alpha Diversity Across Probiotic Status and Administration Routes
+```{r}
+set.seed(421)
+
+p = plot_richness(psrare,
+                  x = "administration",
+                  measures = c("Observed"),
+                  color = "administration")
+p
+
+pdata = p$data
+
+str(pdata)
+
+p_formatted <- pdata %>%
+  ggplot(aes(x = administration, y = value, fill = probiotics)) +
+  geom_boxplot(
+    aes(group = interaction(administration, probiotics)),
+    outlier.shape = NA,
+    width = 0.6,
+    position = position_dodge(width = 0.7)
+  ) +
+  geom_jitter(
+    aes(group = probiotics),
+    position = position_jitterdodge(
+      jitter.width = 0.08,
+      dodge.width = 0.7
+    ),
+    alpha = 0.4,
+    size = 2,
+    shape = 16,
+    color = "black"
+  ) +
+  scale_fill_manual(values = c(
+    "No" = "#F8766D",
+    "Yes" = "#00BFC4"
+  )) +
+  theme_classic(base_size = 18) +
+  ylab("Alpha Diversity") +
+  xlab("Administration route") +
+  labs(fill = "Probiotics")
+
+p_formatted
+
+ggsave(
+  "Observed_Alpha_Diversity.jpeg",
+  plot = p_formatted,
+  height = 5, width = 8
+)
+
+
+```
+
+
+## Chao1 Alpha Diversity Across Probiotic Status and Administration Routes
+
+```{r}
+set.seed(421)
+
+p = plot_richness(psrare,
+                  x = "administration",
+                  measures = c("Chao1"),
+                  color = "administration")
+p
+
+pdata = p$data
+
+str(pdata)
+
+p_formatted <- pdata %>%
+  ggplot(aes(x = administration, y = value, fill = probiotics)) +
+  geom_boxplot(
+    aes(group = interaction(administration, probiotics)),
+    outlier.shape = NA,
+    width = 0.6,
+    position = position_dodge(width = 0.7)
+  ) +
+  geom_jitter(
+    aes(group = probiotics),
+    position = position_jitterdodge(
+      jitter.width = 0.08,
+      dodge.width = 0.7
+    ),
+    alpha = 0.4,
+    size = 2,
+    shape = 16,
+    color = "black"
+  ) +
+  scale_fill_manual(values = c(
+    "No" = "#F8766D",
+    "Yes" = "#00BFC4"
+  )) +
+  theme_classic(base_size = 18) +
+  ylab("Alpha Diversity") +
+  xlab("Administration route") +
+  labs(fill = "Probiotics")
+
+p_formatted
+
+ggsave(
+  "Chao1_Alpha_Diversity.jpeg",
+  plot = p_formatted,
+  height = 5, width = 8
+)
+
+
+
+```
+
+
+
+## Four metrics Alpha Diversity Across Probiotic Status and Administration Routes
+```{r}
+
+set.seed(421)
+
+p = plot_richness(psrare,
+                  x = 'administration',
+                  measures = c('Observed','Shannon','Chao1','Simpson'),
+                  color = 'administration')
+p
+
+pdata = p$data
+
+str(pdata)
+
+p_formatted <- pdata %>%
+  ggplot(aes(x = administration, y = value, fill = probiotics)) +
+  geom_boxplot(
+    aes(group = interaction(administration, probiotics)),
+    outlier.shape = NA,
+    width = 0.6,
+    position = position_dodge(width = 0.7)
+  ) +
+  geom_jitter(
+    aes(group = probiotics),
+    position = position_jitterdodge(
+      jitter.width = 0.08,
+      dodge.width = 0.7
+    ),
+    alpha = 0.4,
+    size = 2,
+    shape = 16,
+    color = "black"
+  ) +
+  scale_fill_manual(values = c(
+    "No" = "#F8766D",
+    "Yes" = "#00BFC4"
+  )) +
+  theme_classic(base_size = 18) +
+  facet_wrap(~variable,ncol=4,scales = 'free_y') +
+  ylab("Alpha Diversity") +
+  xlab("Administration route") +
+  theme(axis.text.x = element_text(angle = 45,vjust=1,hjust=1)) +
+  labs(fill = "Probiotics")
+
+p_formatted
+
+ggsave(
+  "Shannon_Alpha_Diversity.jpeg",
+  plot = p_formatted,
+  height = 5, width = 16
+)
+
+
+```
+
+
+
+## Linear Regreassion Model of Alpha Diversity with Interaction Effects
+```{R}
+
+#run a linear regression model instead of krustcal-Wallis test
+stats <- pdata %>%
+  group_by(variable) %>%
+  group_modify(~{
+    temp_stats = data.frame()
+    lmmod <- glm(value ~ probiotics * administration, data = .x)
+    
+    temp_stats <- broom::tidy(lmmod) %>%
+      mutate(effect = "interaction") %>%   mutate(padj = p.adjust(p.value, method='BH'), .after='p.value')
+
+    return(temp_stats)
+  }) %>%
+  ungroup() %>%
+  arrange(term)
+
+stats2 <- stats %>%
+  filter(term =="probioticsYes:administrationOral")
+View(stats2)
+
+
+View(stats)
+
+
+maxvals <- pdata %>%
+  group_by(variable) %>%
+  summarize(max.y = max(value)) %>% ungroup()
+
+annot <- stats2 %>%
+  mutate(label = paste('Padj-INT=',signif(padj,digits = 2),sep='')) %>%
+  left_join(maxvals, by = "variable") %>%
+  mutate(ypos = 1.1 * max.y, xpos = 1.5, probiotics = "Yes", administration = "Oral", "Non-Oral", )
+
+```
+
+##Add statistical annotations to plot
+```{r}
+p_final <- p_formatted +
+  geom_text(data = annot,
+            aes(x = xpos, y = ypos, label = label),
+            size = 5) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1)))
+
+p_final
+
+
+ggsave('Final plot- Alpha Diversity-simpson.jpeg',
+       plot = p_final,
+       height= 5, width = 16)
+
+
+```
