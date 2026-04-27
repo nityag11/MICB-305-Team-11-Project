@@ -72,7 +72,7 @@ metacyc_t <- as.data.frame(t(metacyc_pro_oral_filt))
 shared_samples <- intersect(rownames(metacyc_t), metadata_maaslin$sample_name)
 
 metacyc_t <- metacyc_t[shared_samples, , drop = FALSE]
-metadata_maaslin_filtered <- metadata_maaslin %>%
+metadata_maaslin_filtered <- metadata_maaslin |>
   filter(sample_name %in% shared_samples)
 
 ```
@@ -83,8 +83,8 @@ metadata_maaslin_filtered <- metadata_maaslin %>%
 # MaAslin2 analysis on correlation between administration route and Pathway abundant With respect to Probiotic Usage
 
 # Probiotic Group
-metadata_probiotic <- metadata_maaslin_filtered %>%
-  filter(probiotics == "yes") %>%
+metadata_probiotic <- metadata_maaslin_filtered |>
+  filter(probiotics == "yes") |>
   column_to_rownames("sample_name")
 
 metacyc_probiotic <- metacyc_t[rownames(metadata_probiotic), , drop = FALSE]
@@ -100,8 +100,8 @@ maaslin_probiotic <- Maaslin2(
 results_probiotic_all <- read_tsv("maaslin_probiotic_only/all_results.tsv")
 
 # Non-probiotic
-metadata_nonprobiotic <- metadata_maaslin_filtered %>%
-  filter(probiotics == "no") %>%
+metadata_nonprobiotic <- metadata_maaslin_filtered |>
+  filter(probiotics == "no") |>
   column_to_rownames("sample_name")
 
 metacyc_nonprobiotic <- metacyc_t[rownames(metadata_nonprobiotic), , drop = FALSE]
@@ -185,7 +185,7 @@ results_interaction_only <- results_interact_all |>
   arrange(qval)
   
 interaction_volc <- results_interaction_only |>
-  mutate(sig = qval < 0.05) %>%
+  mutate(sig = qval < 0.05) |>
   ggplot(aes(x = coef, y = -log10(qval))) +
   geom_point() +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
